@@ -3,6 +3,10 @@ import pandas as pd
 import time
 import os
 import configparser
+from flask import Flask
+import json
+
+app = Flask(__name__)
 
 
 #putting all secrets in config file
@@ -23,6 +27,8 @@ api = tweepy.API(auth,wait_on_rate_limit=True)
 # print("Authenticated")
 
 tweets = []
+
+@app.route("/save_top_tweets", methods = ['GET'])
 def trending_tweets_to_csv():
     try:      
         # Creation of query method using parameters
@@ -44,6 +50,36 @@ def trending_tweets_to_csv():
     except BaseException as e:
           print('failed on_status,',str(e))
           time.sleep(3)
+    
+    return "File Saved!"
 
 # Calling function to turn username's past X amount of tweets into a CSV file
-trending_tweets_to_csv()
+# trending_tweets_to_csv()
+
+@app.route("/get_top_tweets", methods = ['GET'])
+def trending_tweets():
+    data_dict = {}
+    try:      
+        # Creation of query method using parameters
+        # tweets = tweepy.Cursor(api.user_timeline,id=username).items(count)
+        tweets = api.trends_place(id = 1)
+        # print("tweets ==> ", tweets)
+
+        # Pulling information from tweets iterable object
+        for tweet in tweets[0]['trends']:
+            data_dict[tweet['name']] = {
+                "url":tweet['url'],
+                "volume": tweet['tweet_volume']
+            }
+
+
+
+
+    except BaseException as e:
+          print('failed on_status,',str(e))
+          time.sleep(3)
+    
+    return json.dumps(data_dict,indent=4)
+
+if __name__ == "__main__":
+    app.run()
